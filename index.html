@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Habits">
+<meta name="theme-color" content="#1D9E75">
+<title>Loop Habit Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root {
+  --bg: #f5f5f5;
+  --bg2: #ffffff;
+  --bg3: #ececec;
+  --text: #1a1a1a;
+  --text2: #666;
+  --text3: #999;
+  --border: rgba(0,0,0,0.1);
+  --border2: rgba(0,0,0,0.18);
+  --green: #1D9E75;
+  --green-dark: #0F6E56;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+[data-dark] {
+  --bg: #111;
+  --bg2: #1c1c1e;
+  --bg3: #2c2c2e;
+  --text: #f2f2f7;
+  --text2: #aeaeb2;
+  --text3: #636366;
+  --border: rgba(255,255,255,0.1);
+  --border2: rgba(255,255,255,0.2);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:-webkit-fill-available;overscroll-behavior:none}
+.app{max-width:500px;margin:0 auto;background:var(--bg);min-height:100vh;min-height:-webkit-fill-available;display:flex;flex-direction:column;position:relative}
+.topbar{background:var(--bg2);border-bottom:0.5px solid var(--border);padding:12px 16px;padding-top:max(12px, env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+.topbar h1{font-size:19px;font-weight:600}
+.topbar-actions{display:flex;gap:4px}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--text2);padding:6px;border-radius:var(--radius-sm);display:flex;align-items:center;font-size:22px;transition:background .15s}
+.icon-btn:active{background:var(--bg3)}
+.tab-bar{display:flex;background:var(--bg2);border-bottom:0.5px solid var(--border);position:sticky;top:56px;z-index:19}
+.tab{flex:1;padding:10px 4px 8px;text-align:center;font-size:11px;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tab i{font-size:20px}
+.tab.active{color:var(--green);border-bottom:2px solid var(--green);font-weight:500}
+.screen{display:none;flex:1;overflow-y:auto;padding-bottom:max(80px, calc(env(safe-area-inset-bottom) + 80px))}
+.screen.active{display:block}
+
+/* Habits list */
+.habits-list{padding:10px}
+.habit-card{background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:10px;overflow:hidden}
+.habit-header{display:flex;align-items:center;padding:13px 14px;gap:12px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.habit-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.habit-info{flex:1;min-width:0}
+.habit-name{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.habit-note{font-size:12px;color:var(--text2);margin-top:1px}
+.habit-score{text-align:right;flex-shrink:0}
+.habit-score .score-num{font-size:20px;font-weight:600;line-height:1}
+.habit-score .score-lbl{font-size:10px;color:var(--text3);margin-top:1px}
+.streak-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 7px;border-radius:20px;background:#E1F5EE;color:#0F6E56;font-weight:600;margin-top:4px}
+[data-dark] .streak-badge{background:#0a2e22;color:#5DCAA5}
+.checks-row{display:flex;padding:0 14px 12px;gap:5px;overflow-x:auto;scrollbar-width:none}
+.checks-row::-webkit-scrollbar{display:none}
+.day-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0}
+.day-lbl{font-size:10px;color:var(--text3)}
+.chk{width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .1s;-webkit-user-select:none;user-select:none;position:relative}
+.chk.done{border:none}
+.chk.is-today{border-width:2px}
+.chk:active{transform:scale(0.88)}
+.chk .cnt{font-size:9px;font-weight:600;position:absolute;bottom:2px;right:3px}
+.habit-actions{display:flex;padding:0 14px 10px;gap:6px;justify-content:flex-end}
+.mini-btn{font-size:12px;padding:4px 10px;border-radius:20px;border:0.5px solid var(--border2);background:none;cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:3px}
+.mini-btn:active{background:var(--bg3)}
+.mini-btn.del:active{color:#E24B4A}
+
+/* FAB */
+.fab{position:fixed;bottom:max(24px, calc(env(safe-area-inset-bottom) + 16px));right:calc(50% - min(250px, 50vw) + 16px);width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:26px;display:flex;align-items:center;justify-content:center;z-index:30;transition:transform .1s}
+.fab:active{transform:scale(0.92);background:var(--green-dark)}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:24px 20px;padding-bottom:max(32px, calc(env(safe-area-inset-bottom) + 24px));max-height:92vh;overflow-y:auto}
+.modal h2{font-size:19px;font-weight:600;margin-bottom:20px}
+.form-grp{margin-bottom:15px}
+.form-grp label{display:block;font-size:13px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.form-grp input,.form-grp select,.form-grp textarea{width:100%;padding:11px 13px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);font-size:15px;font-family:inherit;appearance:none;-webkit-appearance:none}
+.form-grp textarea{resize:none;height:64px}
+.color-row{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0}
+.cswatch{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border-color .15s;display:flex;align-items:center;justify-content:center}
+.cswatch.sel{border-color:var(--text)}
+.btn-row{display:flex;gap:10px;margin-top:22px}
+.btn{flex:1;padding:13px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:none;cursor:pointer;font-size:15px;color:var(--text);font-weight:500;transition:background .15s}
+.btn:active{background:var(--bg3)}
+.btn.primary{background:var(--green);color:#fff;border:none}
+.btn.primary:active{background:var(--green-dark)}
+.btn.danger{color:#E24B4A;border-color:#E24B4A}
+
+/* Stats */
+.stats-screen{padding:10px}
+.stat-card{background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border);padding:14px;margin-bottom:10px}
+.stat-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.stat-head h3{font-size:16px;font-weight:500}
+.nums-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.num-box{text-align:center;padding:10px 4px;background:var(--bg3);border-radius:var(--radius-sm)}
+.num-box .n{font-size:22px;font-weight:600;line-height:1}
+.num-box .l{font-size:11px;color:var(--text3);margin-top:3px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bar-bg{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.bar-lbl{font-size:12px;color:var(--text2);min-width:32px;text-align:right}
+.bar-name{font-size:12px;color:var(--text2);min-width:110px}
+.heatmap{display:grid;gap:3px}
+.hm-cell{width:14px;height:14px;border-radius:3px;cursor:default}
+.hm-wrap{overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.hm-wrap::-webkit-scrollbar{display:none}
+.weekday-chart{display:flex;gap:4px;align-items:flex-end;height:60px;margin-bottom:14px}
+.wd-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+.wd-bar{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height .4s}
+.wd-lbl{font-size:10px;color:var(--text3)}
+
+/* History */
+.history-screen{padding:10px}
+.hist-month{background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:10px;overflow:hidden}
+.month-hdr{padding:12px 14px;font-size:14px;font-weight:600;color:var(--text2);border-bottom:0.5px solid var(--border)}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:8px 12px 0}
+.dow-lbl{font-size:10px;color:var(--text3);text-align:center}
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:4px 12px 12px}
+.mday{aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;cursor:default}
+
+/* Settings */
+.settings-screen{padding:10px}
+.set-card{background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:10px;overflow:hidden}
+.set-row{display:flex;align-items:center;padding:14px 16px;border-bottom:0.5px solid var(--border);gap:12px;cursor:pointer;transition:background .15s}
+.set-row:last-child{border-bottom:none}
+.set-row:active{background:var(--bg3)}
+.set-icon{font-size:20px;color:var(--text2);width:24px;text-align:center}
+.set-lbl{flex:1;font-size:15px}
+.set-val{font-size:13px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.toggle{width:46px;height:27px;border-radius:14px;background:var(--bg3);border:0.5px solid var(--border2);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--green);border-color:var(--green)}
+.toggle::after{content:'';width:21px;height:21px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.toggle.on::after{left:22px}
+
+/* Empty */
+.empty{text-align:center;padding:52px 24px;color:var(--text3)}
+.empty i{font-size:52px;opacity:.25;margin-bottom:12px;display:block}
+.empty p{font-size:15px;line-height:1.6}
+
+/* Detail */
+.detail-modal h2{font-size:21px}
+.sect-lbl{font-size:13px;color:var(--text2);font-weight:500;margin-bottom:8px}
+
+/* Notifications info */
+.notif-tip{background:var(--bg3);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>Συνήθειες</h1>
+    <div class="topbar-actions">
+      <button class="icon-btn" onclick="openNotifModal()" title="Υπενθυμίσεις"><i class="ti ti-bell"></i></button>
+      <button class="icon-btn" onclick="exportData()" title="Εξαγωγή"><i class="ti ti-download"></i></button>
+      <button class="icon-btn" onclick="importData()" title="Εισαγωγή"><i class="ti ti-upload"></i></button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab active" onclick="showTab('habits')"><i class="ti ti-home"></i><span>Σήμερα</span></div>
+    <div class="tab" onclick="showTab('stats')"><i class="ti ti-chart-bar"></i><span>Στατιστικά</span></div>
+    <div class="tab" onclick="showTab('history')"><i class="ti ti-calendar"></i><span>Ιστορικό</span></div>
+    <div class="tab" onclick="showTab('settings')"><i class="ti ti-settings"></i><span>Ρυθμίσεις</span></div>
+  </div>
+
+  <div id="s-habits" class="screen active">
+    <div class="habits-list" id="habits-list"></div>
+  </div>
+  <div id="s-stats" class="screen stats-screen" id="stats-content-wrap">
+    <div id="stats-content"></div>
+  </div>
+  <div id="s-history" class="screen history-screen">
+    <div id="history-content"></div>
+  </div>
+  <div id="s-settings" class="screen settings-screen">
+    <div class="set-card">
+      <div class="set-row" onclick="toggleSetting('darkMode')">
+        <i class="ti ti-moon set-icon"></i>
+        <span class="set-lbl">Σκοτεινή λειτουργία</span>
+        <div class="toggle" id="tog-darkMode"></div>
+      </div>
+      <div class="set-row" onclick="toggleSetting('showScore')">
+        <i class="ti ti-star set-icon"></i>
+        <span class="set-lbl">Εμφάνιση score</span>
+        <div class="toggle" id="tog-showScore"></div>
+      </div>
+      <div class="set-row" onclick="toggleSetting('vibrate')">
+        <i class="ti ti-ripple set-icon"></i>
+        <span class="set-lbl">Δόνηση</span>
+        <div class="toggle" id="tog-vibrate"></div>
+      </div>
+      <div class="set-row" onclick="toggleSetting('showNote')">
+        <i class="ti ti-notes set-icon"></i>
+        <span class="set-lbl">Εμφάνιση σημειώσεων</span>
+        <div class="toggle" id="tog-showNote"></div>
+      </div>
+    </div>
+    <div class="set-card">
+      <div class="set-row" onclick="exportData()">
+        <i class="ti ti-file-export set-icon"></i>
+        <span class="set-lbl">Εξαγωγή δεδομένων</span>
+        <span class="set-val">JSON <i class="ti ti-chevron-right"></i></span>
+      </div>
+      <div class="set-row" onclick="importData()">
+        <i class="ti ti-file-import set-icon"></i>
+        <span class="set-lbl">Εισαγωγή δεδομένων</span>
+        <span class="set-val"><i class="ti ti-chevron-right"></i></span>
+      </div>
+      <div class="set-row" onclick="clearAll()">
+        <i class="ti ti-trash set-icon" style="color:#E24B4A"></i>
+        <span class="set-lbl" style="color:#E24B4A">Διαγραφή όλων</span>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--text3);text-align:center;padding:14px">Loop Habit Tracker PWA v1.0<br>Δεδομένα αποθηκεύονται τοπικά στη συσκευή</p>
+  </div>
+</div>
+
+<button class="fab" onclick="openAddModal()" aria-label="Προσθήκη συνήθειας"><i class="ti ti-plus"></i></button>
+
+<!-- Add/Edit Modal -->
+<div class="modal-bg" id="add-modal" onclick="bgClose(event,'add-modal')">
+  <div class="modal">
+    <h2 id="modal-title">Νέα Συνήθεια</h2>
+    <div class="form-grp">
+      <label>Όνομα</label>
+      <input type="text" id="h-name" placeholder="π.χ. Γυμναστική, Διαβάσμα...">
+    </div>
+    <div class="form-grp">
+      <label>Σημείωση (προαιρετική)</label>
+      <input type="text" id="h-note" placeholder="π.χ. Τουλάχιστον 30 λεπτά">
+    </div>
+    <div class="form-grp">
+      <label>Τύπος</label>
+      <select id="h-type" onchange="typeChange()">
+        <option value="daily">Ημερήσια (ναι/όχι)</option>
+        <option value="counter">Μετρητής (αριθμός)</option>
+      </select>
+    </div>
+    <div class="form-grp" id="freq-wrap">
+      <label>Συχνότητα (φορές / εβδομάδα)</label>
+      <input type="number" id="h-freq" min="1" max="7" value="7">
+    </div>
+    <div class="form-grp" id="target-wrap" style="display:none">
+      <label>Στόχος (αριθμός ανά ημέρα)</label>
+      <input type="number" id="h-target" min="1" value="10">
+      <label style="margin-top:8px">Μονάδα (π.χ. λεπτά, ποτήρια)</label>
+      <input type="text" id="h-unit" placeholder="π.χ. λεπτά" style="margin-top:5px">
+    </div>
+    <div class="form-grp">
+      <label>Χρώμα</label>
+      <div class="color-row" id="color-row"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="closeModal('add-modal')">Ακύρωση</button>
+      <button class="btn primary" onclick="saveHabit()">Αποθήκευση</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-bg" id="detail-modal" onclick="bgClose(event,'detail-modal')">
+  <div class="modal detail-modal" id="detail-content"></div>
+</div>
+
+<!-- Notifications Modal -->
+<div class="modal-bg" id="notif-modal" onclick="bgClose(event,'notif-modal')">
+  <div class="modal">
+    <h2>Υπενθυμίσεις</h2>
+    <div class="notif-tip">
+      <strong>Σε iPhone:</strong> Άνοιξε το site στο Safari και πρόσθεσε το στην αρχική οθόνη. Τότε οι ειδοποιήσεις λειτουργούν από iOS 16.4+.<br><br>
+      Χρειάζεται να δώσεις άδεια όταν εμφανιστεί το popup.
+    </div>
+    <div class="form-grp">
+      <label>Ώρα υπενθύμισης</label>
+      <input type="time" id="notif-time" value="09:00">
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="closeModal('notif-modal')">Κλείσιμο</button>
+      <button class="btn primary" onclick="requestNotif()">Ενεργοποίηση</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+const COLORS=['#1D9E75','#378ADD','#D85A30','#D4537E','#7F77DD','#BA7517','#639922','#E24B4A','#0F6E56','#185FA5'];
+const DAYS=['Κυ','Δε','Τρ','Τε','Πε','Πα','Σα'];
+const MONTHS=['Ιανουάριος','Φεβρουάριος','Μάρτιος','Απρίλιος','Μάιος','Ιούνιος','Ιούλιος','Αύγουστος','Σεπτέμβριος','Οκτώβριος','Νοέμβριος','Δεκέμβριος'];
+const MONTHS_SHORT=['Ιαν','Φεβ','Μαρ','Απρ','Μάι','Ιουν','Ιουλ','Αυγ','Σεπ','Οκτ','Νοε','Δεκ'];
+
+let habits=[], settings={showScore:true,vibrate:true,darkMode:false,showNote:true};
+let editingId=null, selColor=COLORS[0];
+
+const save=()=>{localStorage.setItem('lht2_h',JSON.stringify(habits));localStorage.setItem('lht2_s',JSON.stringify(settings))};
+function load(){
+  try{habits=JSON.parse(localStorage.getItem('lht2_h'))||[];}catch{habits=[];}
+  try{const s=JSON.parse(localStorage.getItem('lht2_s'));if(s)settings={...settings,...s};}catch{}
+}
+
+const dk=(d)=>d.toISOString().slice(0,10);
+const today=()=>dk(new Date());
+const ago=(n)=>{const d=new Date();d.setDate(d.getDate()-n);return d};
+const pad=(n)=>String(n).padStart(2,'0');
+
+// Score: exponential moving average (same as Loop)
+function getScore(h){
+  const e=h.entries||{};let s=0;const alpha=0.05;
+  for(let i=99;i>=0;i--){const d=dk(ago(i));const v=e[d]||0;const t=h.type==='counter'?(h.target||1):1;s=s*(1-alpha)+Math.min(v/t,1)*alpha;}
+  return Math.round(s*100);
+}
+function getStreak(h){
+  const e=h.entries||{};let streak=0;
+  for(let i=0;i<366;i++){const d=dk(ago(i));const v=e[d]||0;const t=h.type==='counter'?(h.target||1):1;if(v>=t)streak++;else if(i===0)continue;else break;}
+  return streak;
+}
+function getCompRate(h,days){
+  const e=h.entries||{};let done=0;
+  for(let i=0;i<days;i++){const d=dk(ago(i));const v=e[d]||0;const t=h.type==='counter'?(h.target||1):1;if(v>=t)done++;}
+  return Math.round(done/days*100);
+}
+function isDone(h,dateStr){const v=(h.entries||{})[dateStr]||0;return v>=(h.type==='counter'?(h.target||1):1);}
+function getVal(h,dateStr){return (h.entries||{})[dateStr]||0;}
+
+function toggleCheck(id,dateStr){
+  const h=habits.find(x=>x.id===id);if(!h)return;
+  if(!h.entries)h.entries={};
+  if(h.type==='counter'){
+    const cur=h.entries[dateStr]||0;
+    h.entries[dateStr]=cur>=(h.target||1)*2?0:cur+1;
+  } else {
+    h.entries[dateStr]=isDone(h,dateStr)?0:1;
+  }
+  save();renderHabits();
+  if(settings.vibrate&&navigator.vibrate)navigator.vibrate(25);
+}
+
+function renderHabits(){
+  const el=document.getElementById('habits-list');
+  if(!habits.length){
+    el.innerHTML='<div class="empty"><i class="ti ti-seedling"></i><p>Δεν έχεις ακόμα συνήθειες.<br>Πάτα <strong>+</strong> για να προσθέσεις.</p></div>';
+    return;
+  }
+  el.innerHTML=habits.map(h=>{
+    const score=getScore(h);const streak=getStreak(h);
+    const cols=[];
+    for(let i=6;i>=0;i--){
+      const d=ago(i);const dateStr=dk(d);
+      const done=isDone(h,dateStr);const isToday=dateStr===today();
+      const val=h.type==='counter'?getVal(h,dateStr):0;
+      const bg=done?h.color:'var(--bg3)';
+      const icon=done?`<i class="ti ti-check" style="color:#fff;font-size:14px"></i>`:'';
+      const cnt=h.type==='counter'&&val>0&&!done?`<span class="cnt" style="color:${h.color}">${val}</span>`:'';
+      cols.push(`<div class="day-col">
+        <span class="day-lbl">${DAYS[d.getDay()]}</span>
+        <div class="chk${done?' done':''}${isToday?' is-today':''}" 
+          style="background:${bg};${isToday&&!done?'border-color:'+h.color:''}"
+          onclick="toggleCheck('${h.id}','${dateStr}')">${icon}${cnt}</div>
+      </div>`);
+    }
+    return `<div class="habit-card">
+      <div class="habit-header" onclick="openDetail('${h.id}')">
+        <div class="habit-dot" style="background:${h.color}"></div>
+        <div class="habit-info">
+          <div class="habit-name">${h.name}</div>
+          ${h.note&&settings.showNote?`<div class="habit-note">${h.note}</div>`:''}
+          ${streak>1?`<div><span class="streak-badge"><i class="ti ti-flame" style="font-size:11px"></i>${streak} μέρες</span></div>`:''}
+        </div>
+        ${settings.showScore?`<div class="habit-score"><div class="score-num" style="color:${h.color}">${score}%</div><div class="score-lbl">score</div></div>`:''}
+      </div>
+      <div class="checks-row">${cols.join('')}</div>
+      <div class="habit-actions">
+        <button class="mini-btn" onclick="openDetail('${h.id}')"><i class="ti ti-chart-line"></i> Στατιστικά</button>
+        <button class="mini-btn" onclick="editHabit('${h.id}')"><i class="ti ti-edit"></i> Επεξεργασία</button>
+        <button class="mini-btn del" onclick="deleteHabit('${h.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderStats(){
+  const el=document.getElementById('stats-content');
+  if(!habits.length){el.innerHTML='<div class="empty"><i class="ti ti-chart-bar"></i><p>Δεν υπάρχουν ακόμα δεδομένα.</p></div>';return;}
+  el.innerHTML=habits.map(h=>{
+    const score=getScore(h);const streak=getStreak(h);
+    const r7=getCompRate(h,7);const r30=getCompRate(h,30);const r90=getCompRate(h,90);
+    const total=Object.values(h.entries||{}).filter(v=>v>0).length;
+    const best=getBestStreak(h);
+    let heat='';
+    for(let i=83;i>=0;i--){const d=dk(ago(i));heat+=`<div class="hm-cell" style="background:${isDone(h,d)?h.color:'var(--bg3)'}" title="${d}"></div>`;}
+    const wdCounts=Array(7).fill(0);
+    for(let i=0;i<56;i++){const d=ago(i);if(isDone(h,dk(d)))wdCounts[d.getDay()]++;}
+    const wdMax=Math.max(...wdCounts,1);
+    const wdBars=DAYS.map((l,i)=>`<div class="wd-bar-wrap"><div class="wd-bar" style="height:${Math.round(wdCounts[i]/wdMax*100)}%;background:${h.color};opacity:${0.4+wdCounts[i]/wdMax*0.6}"></div><span class="wd-lbl">${l}</span></div>`).join('');
+    return `<div class="stat-card">
+      <div class="stat-head">
+        <div class="habit-dot" style="background:${h.color}"></div>
+        <h3>${h.name}</h3>
+      </div>
+      <div class="nums-row">
+        <div class="num-box"><div class="n" style="color:${h.color}">${score}%</div><div class="l">Score</div></div>
+        <div class="num-box"><div class="n">${streak}</div><div class="l">Streak</div></div>
+        <div class="num-box"><div class="n">${best}</div><div class="l">Καλύτερο</div></div>
+      </div>
+      <div class="nums-row" style="margin-bottom:14px">
+        <div class="num-box"><div class="n">${total}</div><div class="l">Σύνολο</div></div>
+        <div class="num-box"><div class="n">${r30}%</div><div class="l">30 μέρες</div></div>
+        <div class="num-box"><div class="n">${r90}%</div><div class="l">90 μέρες</div></div>
+      </div>
+      <div class="sect-lbl">Ολοκλήρωση</div>
+      ${[['7 μέρες',r7],['30 μέρες',r30],['90 μέρες',r90]].map(([l,v])=>`<div class="bar-row"><span class="bar-name">${l}</span><div class="bar-bg"><div class="bar-fill" style="width:${v}%;background:${h.color}"></div></div><span class="bar-lbl">${v}%</span></div>`).join('')}
+      <div class="sect-lbl" style="margin-top:14px">Ανά ημέρα εβδομάδας (8 εβδομάδες)</div>
+      <div class="weekday-chart">${wdBars}</div>
+      <div class="sect-lbl">Heatmap (84 μέρες)</div>
+      <div class="hm-wrap"><div class="heatmap" style="grid-template-columns:repeat(12,1fr)">${heat}</div></div>
+    </div>`;
+  }).join('');
+}
+
+function getBestStreak(h){
+  const e=h.entries||{};let best=0,cur=0;
+  for(let i=365;i>=0;i--){const d=dk(ago(i));if(isDone(h,d))cur++;else cur=0;if(cur>best)best=cur;}
+  return best;
+}
+
+function renderHistory(){
+  const el=document.getElementById('history-content');
+  if(!habits.length){el.innerHTML='<div class="empty"><i class="ti ti-calendar"></i><p>Δεν υπάρχουν ακόμα δεδομένα.</p></div>';return;}
+  let html='';
+  for(let m=0;m<4;m++){
+    const ref=new Date();ref.setDate(1);ref.setMonth(ref.getMonth()-m);
+    const y=ref.getFullYear(),mo=ref.getMonth();
+    const dim=new Date(y,mo+1,0).getDate();
+    const fd=new Date(y,mo,1).getDay();
+    let cells='';
+    for(let i=0;i<fd;i++)cells+='<div></div>';
+    for(let d=1;d<=dim;d++){
+      const dateStr=`${y}-${pad(mo+1)}-${pad(d)}`;
+      const done=habits.filter(h=>isDone(h,dateStr)).length;
+      const total=habits.length;const pct=done/total;
+      let bg='var(--bg3)';
+      if(pct>0&&pct<=0.33)bg='rgba(29,158,117,0.3)';
+      if(pct>0.33&&pct<=0.66)bg='rgba(29,158,117,0.6)';
+      if(pct>0.66)bg='#1D9E75';
+      const light=pct>0.5;
+      cells+=`<div class="mday" style="background:${bg};color:${light?'#fff':'var(--text3)'}" title="${done}/${total}">${d}</div>`;
+    }
+    html+=`<div class="hist-month">
+      <div class="month-hdr">${MONTHS[mo]} ${y}</div>
+      <div class="dow-row">${DAYS.map(d=>`<div class="dow-lbl">${d}</div>`).join('')}</div>
+      <div class="month-grid">${cells}</div>
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+
+function openDetail(id){
+  const h=habits.find(x=>x.id===id);if(!h)return;
+  const score=getScore(h);const streak=getStreak(h);const best=getBestStreak(h);
+  const r7=getCompRate(h,7);const r30=getCompRate(h,30);const r90=getCompRate(h,90);
+  const total=Object.values(h.entries||{}).filter(v=>v>0).length;
+  let heat='';
+  for(let i=55;i>=0;i--){const d=dk(ago(i));heat+=`<div class="hm-cell" style="background:${isDone(h,d)?h.color:'var(--bg3)'}" title="${d}"></div>`;}
+  document.getElementById('detail-content').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+      <div class="habit-dot" style="background:${h.color};width:16px;height:16px"></div>
+      <h2>${h.name}</h2>
+    </div>
+    ${h.note?`<p style="font-size:14px;color:var(--text2);margin-bottom:16px">${h.note}</p>`:'<div style="margin-bottom:16px"></div>'}
+    <div class="nums-row" style="margin-bottom:10px">
+      <div class="num-box"><div class="n" style="color:${h.color}">${score}%</div><div class="l">Score</div></div>
+      <div class="num-box"><div class="n">${streak}</div><div class="l">Streak</div></div>
+      <div class="num-box"><div class="n">${best}</div><div class="l">Καλύτερο</div></div>
+    </div>
+    <div class="nums-row" style="margin-bottom:16px">
+      <div class="num-box"><div class="n">${total}</div><div class="l">Σύνολο</div></div>
+      <div class="num-box"><div class="n">${r7}%</div><div class="l">7 μέρες</div></div>
+      <div class="num-box"><div class="n">${r30}%</div><div class="l">30 μέρες</div></div>
+    </div>
+    <div class="sect-lbl">Heatmap (56 μέρες)</div>
+    <div class="hm-wrap" style="margin-bottom:20px"><div class="heatmap" style="grid-template-columns:repeat(8,1fr)">${heat}</div></div>
+    <div class="btn-row">
+      <button class="btn" onclick="closeModal('detail-modal')">Κλείσιμο</button>
+      <button class="btn primary" onclick="closeModal('detail-modal');editHabit('${h.id}')">Επεξεργασία</button>
+    </div>`;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function showTab(name){
+  const names=['habits','stats','history','settings'];
+  names.forEach((n,i)=>{
+    document.getElementById('s-'+n).classList.toggle('active',n===name);
+    document.querySelectorAll('.tab')[i].classList.toggle('active',n===name);
+  });
+  if(name==='stats')renderStats();
+  if(name==='history')renderHistory();
+  if(name==='settings')renderToggles();
+}
+
+function typeChange(){
+  const t=document.getElementById('h-type').value;
+  document.getElementById('freq-wrap').style.display=t==='counter'?'none':'';
+  document.getElementById('target-wrap').style.display=t==='counter'?'':'none';
+}
+
+function openAddModal(){
+  editingId=null;
+  document.getElementById('modal-title').textContent='Νέα Συνήθεια';
+  ['h-name','h-note','h-unit'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('h-type').value='daily';
+  document.getElementById('h-freq').value='7';
+  document.getElementById('h-target').value='10';
+  document.getElementById('freq-wrap').style.display='';
+  document.getElementById('target-wrap').style.display='none';
+  selColor=COLORS[0];renderColors();
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('h-name').focus(),300);
+}
+
+function editHabit(id){
+  const h=habits.find(x=>x.id===id);if(!h)return;
+  editingId=id;
+  document.getElementById('modal-title').textContent='Επεξεργασία Συνήθειας';
+  document.getElementById('h-name').value=h.name||'';
+  document.getElementById('h-note').value=h.note||'';
+  document.getElementById('h-type').value=h.type||'daily';
+  document.getElementById('h-freq').value=h.freq||7;
+  document.getElementById('h-target').value=h.target||10;
+  document.getElementById('h-unit').value=h.unit||'';
+  typeChange();selColor=h.color||COLORS[0];renderColors();
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function renderColors(){
+  document.getElementById('color-row').innerHTML=COLORS.map(c=>`
+    <div class="cswatch${c===selColor?' sel':''}" style="background:${c}" onclick="selColor='${c}';renderColors()">
+      ${c===selColor?'<i class="ti ti-check" style="color:#fff;font-size:14px"></i>':''}
+    </div>`).join('');
+}
+
+function saveHabit(){
+  const name=document.getElementById('h-name').value.trim();
+  if(!name){document.getElementById('h-name').focus();return;}
+  const data={
+    name,note:document.getElementById('h-note').value.trim(),
+    type:document.getElementById('h-type').value,
+    freq:parseInt(document.getElementById('h-freq').value)||7,
+    target:parseInt(document.getElementById('h-target').value)||10,
+    unit:document.getElementById('h-unit').value.trim(),
+    color:selColor
+  };
+  if(editingId){Object.assign(habits.find(x=>x.id===editingId),data);}
+  else{habits.push({id:Date.now().toString(),...data,entries:{},createdAt:today()});}
+  save();closeModal('add-modal');renderHabits();
+}
+
+function deleteHabit(id){
+  const h=habits.find(x=>x.id===id);
+  if(!confirm(`Διαγραφή "${h.name}";`))return;
+  habits=habits.filter(x=>x.id!==id);save();renderHabits();
+}
+
+function bgClose(e,id){if(e.target===e.currentTarget)closeModal(id);}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function openNotifModal(){document.getElementById('notif-modal').classList.add('open');}
+
+function toggleSetting(k){settings[k]=!settings[k];save();renderToggles();if(k==='darkMode')applyDark();if(k==='showScore'||k==='showNote')renderHabits();}
+function renderToggles(){Object.keys(settings).forEach(k=>{const el=document.getElementById('tog-'+k);if(el)el.className='toggle'+(settings[k]?' on':'');});}
+function applyDark(){document.documentElement.toggleAttribute('data-dark',settings.darkMode);}
+
+function exportData(){
+  const blob=new Blob([JSON.stringify({habits,exported:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`habits_${today()}.json`;a.click();
+}
+function importData(){document.getElementById('import-file').click();}
+function handleImport(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.habits&&Array.isArray(d.habits)){
+        if(confirm(`Εισαγωγή ${d.habits.length} συνηθειών; Θα προστεθούν στις υπάρχουσες.`)){
+          d.habits.forEach(h=>{if(!habits.find(x=>x.id===h.id))habits.push(h);});
+          save();renderHabits();alert('Εισαγωγή επιτυχής!');
+        }
+      } else alert('Μη έγκυρο αρχείο.');
+    }catch{alert('Σφάλμα ανάγνωσης αρχείου.');}
+  };
+  r.readAsText(f);e.target.value='';
+}
+
+function requestNotif(){
+  if(!('Notification' in window)){alert('Ο browser δεν υποστηρίζει ειδοποιήσεις.');return;}
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){
+      const t=document.getElementById('notif-time').value||'09:00';
+      alert(`Ειδοποιήσεις ενεργοποιήθηκαν!\nΏρα: ${t}\n\nΣημείωση: Για daily reminders η σελίδα πρέπει να είναι ανοιχτή ή εγκατεστημένη ως PWA.`);
+      closeModal('notif-modal');
+      localStorage.setItem('notif_time',t);
+    } else alert('Δεν δόθηκε άδεια ειδοποιήσεων.');
+  });
+}
+
+function clearAll(){if(!confirm('Διαγραφή ΟΛΩΝ των δεδομένων; Η ενέργεια δεν αναιρείται.'))return;habits=[];save();renderHabits();}
+
+// Init
+load();applyDark();renderHabits();renderColors();renderToggles();
+
+// Register service worker
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+</script>
+</body>
+</html>
